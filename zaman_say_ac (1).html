@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Zaman Sayğacı | Cosmic Connect</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --cosmic-bg: #070311;
+            --purple-glow: rgba(138, 43, 226, 0.5);
+            --lavender: #d8b4fe;
+            --dark-glass: rgba(20, 10, 40, 0.65);
+            --sidebar-glass: rgba(15, 5, 30, 0.85);
+            --z-bg: 0;
+            --z-particles: 10;
+            --z-ui: 30;
+            --z-halley: 40;
+            --z-sidebar: 50;
+        }
+
+        body {
+            background-color: var(--cosmic-bg);
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+            margin: 0;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        }
+
+        .cinzel { font-family: 'Cinzel', serif; }
+
+        /* Background Layers */
+        #particle-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: var(--z-bg);
+            background: radial-gradient(circle at center, #0f051c 0%, #05010a 100%);
+            pointer-events: none;
+        }
+        #particle-canvas {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: var(--z-particles);
+            pointer-events: none;
+        }
+
+        /* Glassmorphism Utilities */
+        .glass-panel {
+            background: var(--dark-glass);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), 0 0 30px rgba(138, 43, 226, 0.15);
+        }
+
+        .text-glow {
+            text-shadow: 0 0 20px rgba(216, 180, 254, 0.8), 0 0 40px rgba(138, 43, 226, 0.4);
+        }
+
+        /* Sidebar System */
+        #sidebar-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: transparent; 
+            z-index: var(--z-sidebar);
+            pointer-events: none; 
+            display: flex;
+        }
+        #sidebar-overlay.active {
+            pointer-events: auto; 
+        }
+
+        #sidebar {
+            position: relative;
+            width: 85vw;
+            max-width: 400px;
+            height: 100%;
+            background: var(--sidebar-glass);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border-right: 1px solid rgba(168, 85, 247, 0.3);
+            box-shadow: 10px 0 40px rgba(0,0,0,0.8);
+            transform: translateX(-100%);
+            transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+            pointer-events: auto; 
+            display: flex;
+            flex-direction: column;
+        }
+        #sidebar.open {
+            transform: translateX(0);
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 24px;
+            color: #d8b4fe;
+            text-decoration: none;
+            font-size: 1.1rem;
+            border-left: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .nav-link:hover {
+            background: rgba(138, 43, 226, 0.15);
+            color: #fff;
+            border-left-color: rgba(216, 180, 254, 0.8);
+        }
+        .nav-link.active {
+            background: linear-gradient(90deg, rgba(138, 43, 226, 0.2), transparent);
+            color: #fff;
+            border-left-color: #a855f7;
+            font-weight: 600;
+        }
+
+        /* Halley Button */
+        #halley-btn {
+            position: fixed;
+            top: env(safe-area-inset-top, 20px);
+            left: env(safe-area-inset-left, 20px);
+            z-index: var(--z-halley);
+            width: 45px; height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            background: rgba(20, 5, 40, 0.6);
+            border: 1px solid rgba(168, 85, 247, 0.4);
+            backdrop-filter: blur(8px);
+            transition: all 0.3s ease;
+        }
+        #halley-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(216, 180, 254, 0.5);
+            background: rgba(30, 10, 60, 0.8);
+        }
+
+        /* Timer Animations */
+        .timer-unit-container {
+            position: relative;
+        }
+        .timer-unit-container:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            bottom: -16px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 12px;
+            background: linear-gradient(to bottom, rgba(168, 85, 247, 0.5), transparent);
+            border-radius: 2px;
+        }
+        
+        .pulse-number {
+            animation: softPulse 2s infinite alternate;
+        }
+        @keyframes softPulse {
+            0% { text-shadow: 0 0 15px rgba(216, 180, 254, 0.6), 0 0 30px rgba(138, 43, 226, 0.3); }
+            100% { text-shadow: 0 0 25px rgba(216, 180, 254, 1), 0 0 50px rgba(138, 43, 226, 0.6); }
+        }
+
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-start relative">
+
+    <script>
+        const APP_CONFIG = {
+            mainSiteUrl: "index.html",
+            loveGameUrl: "game.html",
+            todayChoiceUrl: "wheel.html",
+            timerUrl: "timer.html",
+            starsUrl: "stars.html",
+            songsUrl: "songs.html"
+        };
+    </script>
+
+    <!-- Background Layers -->
+    <div id="particle-bg"></div>
+    <canvas id="particle-canvas"></canvas>
+
+    <!-- Halley Button -->
+    <button id="halley-btn" aria-label="Menu" style="margin-top: 15px; margin-left: 15px;">
+        <svg class="comet-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="6" cy="18" r="2.5" fill="#d8b4fe" filter="drop-shadow(0 0 4px rgba(216,180,254,0.8))"/>
+            <path d="M7.5 16.5L21 3" stroke="#d8b4fe" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M4.5 15.5L16 4" stroke="#d8b4fe" stroke-width="1" stroke-linecap="round"/>
+            <path d="M8.5 19.5L19 9" stroke="#d8b4fe" stroke-width="1" stroke-linecap="round"/>
+            <circle cx="2" cy="22" r="0.5" fill="#d8b4fe" />
+            <circle cx="3.5" cy="20.5" r="1" fill="#d8b4fe" />
+        </svg>
+    </button>
+
+    <!-- Sidebar -->
+    <div id="sidebar-overlay">
+        <div id="sidebar">
+            <div class="flex items-center justify-between p-6 border-b border-purple-500/20">
+                <h2 class="cinzel text-xl font-bold text-white text-glow">Kosmik Menyu</h2>
+                <button id="btn-close-sidebar" class="text-purple-300 hover:text-white transition-colors p-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <nav class="flex-grow py-6 flex flex-col gap-2" id="sidebar-nav">
+                <!-- Injected via JS based on APP_CONFIG -->
+            </nav>
+
+            <div class="p-6 border-t border-purple-500/20 text-center">
+                <p class="text-xs text-purple-400/60 font-light tracking-widest uppercase">Cosmic Connect &copy; 2026</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="w-full max-w-4xl mx-auto px-4 pt-16 pb-12 flex flex-col relative z-[30] min-h-screen">
+        
+        <!-- Header -->
+        <header class="text-center w-full mb-8 mt-4">
+            <h1 class="text-3xl md:text-5xl font-bold text-white text-glow tracking-wider mb-3 cinzel">
+                ZAMAN SAYĞACI
+            </h1>
+            <p class="text-purple-200/90 text-sm md:text-lg italic font-light">
+                “26 İyun 2026-dan bu yana hər saniyəmiz...”
+            </p>
+        </header>
+
+        <!-- Timer Section -->
+        <main class="w-full flex-grow flex flex-col items-center justify-center">
+            
+            <div class="glass-panel rounded-3xl w-full max-w-sm mx-auto p-8 md:p-12 relative overflow-hidden">
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-purple-900/10 blur-3xl rounded-full pointer-events-none"></div>
+                
+                <div class="flex flex-col items-center justify-center gap-8 relative z-10">
+                    
+                    <div class="timer-unit-container text-center w-full">
+                        <div id="t-years" class="cinzel text-5xl md:text-6xl font-bold text-white pulse-number">00</div>
+                        <div class="text-[11px] md:text-xs text-purple-300 tracking-[0.4em] mt-2 font-light uppercase">İL</div>
+                    </div>
+
+                    <div class="timer-unit-container text-center w-full">
+                        <div id="t-months" class="cinzel text-5xl md:text-6xl font-bold text-white pulse-number">00</div>
+                        <div class="text-[11px] md:text-xs text-purple-300 tracking-[0.4em] mt-2 font-light uppercase">AY</div>
+                    </div>
+
+                    <div class="timer-unit-container text-center w-full">
+                        <div id="t-weeks" class="cinzel text-5xl md:text-6xl font-bold text-white pulse-number">00</div>
+                        <div class="text-[11px] md:text-xs text-purple-300 tracking-[0.4em] mt-2 font-light uppercase">HƏFTƏ</div>
+                    </div>
+
+                    <div class="timer-unit-container text-center w-full">
+                        <div id="t-days" class="cinzel text-5xl md:text-6xl font-bold text-white pulse-number">00</div>
+                        <div class="text-[11px] md:text-xs text-purple-300 tracking-[0.4em] mt-2 font-light uppercase">GÜN</div>
+                    </div>
+
+                    <div class="timer-unit-container text-center w-full">
+                        <div id="t-hours" class="cinzel text-5xl md:text-6xl font-bold text-white pulse-number">00</div>
+                        <div class="text-[11px] md:text-xs text-purple-300 tracking-[0.4em] mt-2 font-light uppercase">SAAT</div>
+                    </div>
+
+                    <div class="timer-unit-container text-center w-full">
+                        <div id="t-minutes" class="cinzel text-5xl md:text-6xl font-bold text-white pulse-number">00</div>
+                        <div class="text-[11px] md:text-xs text-purple-300 tracking-[0.4em] mt-2 font-light uppercase">DƏQİQƏ</div>
+                    </div>
+
+                    <div class="timer-unit-container text-center w-full">
+                        <div id="t-seconds" class="cinzel text-5xl md:text-6xl font-bold text-white pulse-number" style="animation-delay: 1s;">00</div>
+                        <div class="text-[11px] md:text-xs text-purple-300 tracking-[0.4em] mt-2 font-light uppercase">SANİYƏ</div>
+                    </div>
+
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        /* -----------------------------------------------------------
+           1. Sidebar Manager
+        ----------------------------------------------------------- */
+        const SidebarManager = {
+            init: function() {
+                this.overlay = document.getElementById('sidebar-overlay');
+                this.sidebar = document.getElementById('sidebar');
+                this.btnHalley = document.getElementById('halley-btn');
+                this.btnClose = document.getElementById('btn-close-sidebar');
+                this.navContainer = document.getElementById('sidebar-nav');
+                
+                this.isOpen = false;
+                this.buildNav();
+                this.bindEvents();
+            },
+
+            buildNav: function() {
+                const links = [
+                    { name: '💓 Kosmik Ürək', url: APP_CONFIG.mainSiteUrl, active: false },
+                    { name: '🎮 Sevgi Oyunu', url: APP_CONFIG.loveGameUrl, active: false },
+                    { name: '🎡 Bu Gün Nə Edək?', url: APP_CONFIG.todayChoiceUrl, active: false },
+                    { name: '⏳ Zaman Sayğacı', url: APP_CONFIG.timerUrl, active: true },
+                    { name: '✨ Ulduz Xəritəsi', url: APP_CONFIG.starsUrl, active: false },
+                    { name: '🎵 Mahnılarımız', url: APP_CONFIG.songsUrl, active: false }
+                ];
+
+                links.forEach(link => {
+                    const a = document.createElement('a');
+                    a.href = link.url;
+                    a.className = `nav-link ${link.active ? 'active' : ''}`;
+                    a.textContent = link.name;
+                    this.navContainer.appendChild(a);
+                });
+            },
+
+            bindEvents: function() {
+                this.btnHalley.addEventListener('click', () => this.toggle());
+                this.btnClose.addEventListener('click', () => this.close());
+            },
+
+            toggle: function() {
+                this.isOpen ? this.close() : this.open();
+            },
+
+            open: function() {
+                this.isOpen = true;
+                this.overlay.classList.add('active');
+                this.sidebar.classList.add('open');
+            },
+
+            close: function() {
+                this.isOpen = false;
+                this.overlay.classList.remove('active');
+                this.sidebar.classList.remove('open');
+            }
+        };
+
+        /* -----------------------------------------------------------
+           2. Background Particle System
+        ----------------------------------------------------------- */
+        class BackgroundParticles {
+            constructor() {
+                this.canvas = document.getElementById('particle-canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.particles = [];
+                this.numParticles = window.innerWidth < 768 ? 60 : 150;
+                
+                this.resize();
+                window.addEventListener('resize', () => this.resize());
+                
+                this.initParticles();
+                this.animate();
+            }
+
+            resize() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+            }
+
+            initParticles() {
+                this.particles = [];
+                for (let i = 0; i < this.numParticles; i++) {
+                    this.particles.push({
+                        x: Math.random() * this.canvas.width,
+                        y: Math.random() * this.canvas.height,
+                        radius: Math.random() * 1.2 + 0.2,
+                        vx: (Math.random() - 0.5) * 0.15,
+                        vy: (Math.random() - 0.5) * 0.15,
+                        alpha: Math.random() * 0.5 + 0.1,
+                        pulseDir: Math.random() > 0.5 ? 1 : -1
+                    });
+                }
+            }
+
+            animate() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                this.particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    
+                    p.alpha += 0.005 * p.pulseDir;
+                    if (p.alpha > 0.7) { p.alpha = 0.7; p.pulseDir = -1; }
+                    if (p.alpha < 0.1) { p.alpha = 0.1; p.pulseDir = 1; }
+
+                    if (p.x < 0) p.x = this.canvas.width;
+                    if (p.x > this.canvas.width) p.x = 0;
+                    if (p.y < 0) p.y = this.canvas.height;
+                    if (p.y > this.canvas.height) p.y = 0;
+
+                    this.ctx.beginPath();
+                    this.ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    this.ctx.fillStyle = `rgba(216, 180, 254, ${p.alpha})`;
+                    this.ctx.fill();
+                });
+
+                requestAnimationFrame(() => this.animate());
+            }
+        }
+
+        /* -----------------------------------------------------------
+           3. Timer Logic
+        ----------------------------------------------------------- */
+        class TimerApp {
+            constructor() {
+                this.startDate = new Date('2026-06-26T00:00:00');
+                
+                this.elYears = document.getElementById('t-years');
+                this.elMonths = document.getElementById('t-months');
+                this.elWeeks = document.getElementById('t-weeks');
+                this.elDays = document.getElementById('t-days');
+                this.elHours = document.getElementById('t-hours');
+                this.elMinutes = document.getElementById('t-minutes');
+                this.elSeconds = document.getElementById('t-seconds');
+
+                this.init();
+            }
+
+            init() {
+                this.updateTimer();
+                setInterval(() => this.updateTimer(), 1000);
+            }
+
+            formatNumber(num) {
+                if (num < 10) return `0${num}`;
+                return num.toLocaleString('en-US');
+            }
+
+            updateTimer() {
+                const now = new Date();
+                
+                if (now < this.startDate) {
+                    this.render(0, 0, 0, 0, 0, 0, 0);
+                    return;
+                }
+
+                const diffMs = now.getTime() - this.startDate.getTime();
+
+                const totalSeconds = Math.floor(diffMs / 1000);
+                const totalMinutes = Math.floor(totalSeconds / 60);
+                const totalHours = Math.floor(totalMinutes / 60);
+                const totalDays = Math.floor(totalHours / 24);
+                const totalWeeks = Math.floor(totalDays / 7);
+
+                let totalMonths = (now.getFullYear() - this.startDate.getFullYear()) * 12 + (now.getMonth() - this.startDate.getMonth());
+                const tempMonthDate = new Date(this.startDate);
+                tempMonthDate.setMonth(tempMonthDate.getMonth() + totalMonths);
+                if (now < tempMonthDate) {
+                    totalMonths--;
+                }
+
+                let totalYears = now.getFullYear() - this.startDate.getFullYear();
+                const tempYearDate = new Date(this.startDate);
+                tempYearDate.setFullYear(tempYearDate.getFullYear() + totalYears);
+                if (now < tempYearDate) {
+                    totalYears--;
+                }
+
+                this.render(totalYears, totalMonths, totalWeeks, totalDays, totalHours, totalMinutes, totalSeconds);
+            }
+
+            render(y, m, w, d, h, min, s) {
+                this.elYears.textContent = this.formatNumber(y);
+                this.elMonths.textContent = this.formatNumber(m);
+                this.elWeeks.textContent = this.formatNumber(w);
+                this.elDays.textContent = this.formatNumber(d);
+                this.elHours.textContent = this.formatNumber(h);
+                this.elMinutes.textContent = this.formatNumber(min);
+                this.elSeconds.textContent = this.formatNumber(s);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            SidebarManager.init();
+            new BackgroundParticles();
+            new TimerApp();
+        });
+    </script>
+</body>
+</html>

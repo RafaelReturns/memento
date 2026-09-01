@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Mahnılarımız | Cosmic Connect</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --cosmic-bg: #070311; --purple-glow: rgba(138, 43, 226, 0.5); --lavender: #d8b4fe;
+            --sidebar-glass: rgba(15, 5, 30, 0.85); --z-bg: 0; --z-particles: 10; --z-content: 20;
+            --z-halley: 40; --z-sidebar: 50; --z-submenu: 60; --font-title: 'Cinzel', serif; --font-text: 'Inter', sans-serif;
+        }
+        body { background-color: var(--cosmic-bg); color: #fff; font-family: var(--font-text); overflow-x: hidden; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; scroll-behavior: smooth; }
+        
+        #particle-bg { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: var(--z-bg); background: radial-gradient(circle at center, #0f051c 0%, #05010a 100%); pointer-events: none; }
+        #particle-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: var(--z-particles); pointer-events: none; }
+        
+        #halley-btn { position: fixed; top: max(20px, env(safe-area-inset-top)); left: max(20px, env(safe-area-inset-left)); z-index: var(--z-halley); width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; background: rgba(20, 5, 40, 0.6); border: 1px solid rgba(168, 85, 247, 0.4); backdrop-filter: blur(8px); transition: all 0.3s ease; outline: none; }
+        #halley-btn:hover { transform: scale(1.1); box-shadow: 0 0 15px rgba(216, 180, 254, 0.5); background: rgba(30, 10, 60, 0.8); }
+
+        #sidebar-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); backdrop-filter: blur(3px); z-index: var(--z-sidebar); opacity: 0; visibility: hidden; transition: opacity 0.4s ease, visibility 0.4s; }
+        #sidebar-overlay.active { opacity: 1; visibility: visible; pointer-events: auto; }
+        #sidebar { position: fixed; top: 0; left: -100%; width: 85vw; max-width: 320px; height: 100%; background: var(--sidebar-glass); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border-right: 1px solid rgba(168, 85, 247, 0.3); box-shadow: 10px 0 40px rgba(0,0,0,0.8); transition: left 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); z-index: calc(var(--z-sidebar) + 1); display: flex; flex-direction: column; }
+        #sidebar.open { left: 0; }
+
+        .nav-link { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; color: #d8b4fe; text-decoration: none; font-size: 1.1rem; border-left: 3px solid transparent; transition: all 0.3s ease; background: transparent; border-top: none; border-right: none; border-bottom: none; width: 100%; text-align: left; cursor: pointer; font-family: inherit; }
+        .nav-link:hover { background: rgba(138, 43, 226, 0.15); color: #fff; border-left-color: rgba(216, 180, 254, 0.8); }
+        .nav-link.active-menu { background: linear-gradient(90deg, rgba(138, 43, 226, 0.2), transparent); color: #fff; border-left-color: #a855f7; font-weight: 500; }
+
+        #stars-submenu { position: fixed; background: rgba(15, 5, 30, 0.95); backdrop-filter: blur(12px); border: 1px solid rgba(168, 85, 247, 0.3); box-shadow: 15px 15px 40px rgba(0,0,0,0.8), 0 0 20px rgba(138, 43, 226, 0.15); border-radius: 12px; padding: 8px; z-index: var(--z-submenu); transform: translateX(-15px); opacity: 0; visibility: hidden; transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); display: flex; flex-direction: column; gap: 4px; min-width: 220px; }
+        #stars-submenu.show { transform: translateX(0); opacity: 1; visibility: visible; }
+        .submenu-item { padding: 12px 16px; color: rgba(216, 180, 254, 0.8); text-decoration: none; font-size: 0.95rem; border-radius: 8px; transition: all 0.2s ease; display: flex; align-items: center; gap: 8px; }
+        .submenu-item:hover { background: rgba(138, 43, 226, 0.2); color: #fff; }
+        .submenu-item .star-bullet { color: #a855f7; font-size: 1.1rem; transition: transform 0.3s ease; }
+        .submenu-item:hover .star-bullet { transform: scale(1.2); color: #d8b4fe; }
+
+        main { position: relative; z-index: var(--z-content); max-width: 900px; margin: 0 auto; padding: 100px 20px 60px; min-height: 100vh; }
+        .page-header { text-align: center; margin-bottom: 70px; }
+        .music-decor { font-size: 1.2rem; color: var(--lavender); opacity: 0.6; margin-bottom: 15px; letter-spacing: 4px; }
+        .page-header h1 { font-family: var(--font-title); font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 700; letter-spacing: 6px; margin-bottom: 15px; background: linear-gradient(135deg, #fff 30%, #d8b4fe 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-transform: uppercase; text-shadow: 0 0 30px rgba(168, 85, 247, 0.3); }
+        .page-header p { font-size: clamp(0.9rem, 2vw, 1.1rem); color: var(--lavender); font-style: italic; opacity: 0.8; font-weight: 300; letter-spacing: 1px; }
+
+        .songs-list { display: flex; flex-direction: column; gap: 40px; }
+        .song-card { background: rgba(20, 10, 40, 0.4); border: 1px solid rgba(168, 85, 247, 0.2); border-radius: 16px; padding: 40px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5); position: relative; overflow: hidden; opacity: 0; transform: translateY(30px); transition: opacity 0.8s ease, transform 0.8s ease, box-shadow 0.4s ease, border-color 0.4s ease; }
+        .song-card.visible { opacity: 1; transform: translateY(0); }
+        @media (hover: hover) { .song-card:hover { transform: scale(1.01) translateY(-2px); box-shadow: 0 15px 40px rgba(168, 85, 247, 0.15); border-color: rgba(168, 85, 247, 0.4); } }
+        
+        .card-top-row { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+        .song-number { font-family: var(--font-text); font-size: 2rem; color: rgba(255, 255, 255, 0.3); font-weight: 200; user-select: none; letter-spacing: 2px; }
+        
+        .player-btn { width: 40px; height: 40px; border-radius: 50%; background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.3); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; color: #d8b4fe; outline: none; }
+        .player-btn:hover { background: rgba(168, 85, 247, 0.3); border-color: rgba(168, 85, 247, 0.6); transform: scale(1.1); color: #fff; box-shadow: 0 0 15px rgba(168, 85, 247, 0.4); }
+        .player-btn svg { width: 16px; height: 16px; fill: currentColor; margin-left: 2px; }
+
+        .song-card h2 { font-family: var(--font-text); font-size: clamp(1.3rem, 3vw, 1.6rem); color: #fff; font-weight: 500; margin-bottom: 20px; letter-spacing: 0.5px; line-height: 1.4; }
+        .song-divider { width: 60px; height: 1px; background: linear-gradient(90deg, #a855f7, transparent); margin-bottom: 25px; }
+        .song-card p { font-size: 1.05rem; line-height: 1.8; color: rgba(255, 255, 255, 0.85); font-weight: 300; text-align: justify; }
+
+        @media (max-width: 768px) {
+            main { width: 94vw; padding: 80px 0 40px 0; }
+            .song-card { padding: 30px 20px; border-radius: 12px; }
+            .song-number { font-size: 1.6rem; }
+            .player-btn { width: 36px; height: 36px; }
+            .song-divider { margin-bottom: 20px; }
+            .song-card p { font-size: 0.95rem; line-height: 1.7; }
+        }
+    </style>
+</head>
+<body>
+    <div id="particle-bg"></div><canvas id="particle-canvas"></canvas>
+
+    <button id="halley-btn" aria-label="Menu">
+        <svg class="comet-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="6" cy="18" r="2.5" fill="#d8b4fe" filter="drop-shadow(0 0 4px rgba(216,180,254,0.8))"/>
+            <path d="M7.5 16.5L21 3" stroke="#d8b4fe" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M4.5 15.5L16 4" stroke="#d8b4fe" stroke-width="1" stroke-linecap="round"/>
+            <path d="M8.5 19.5L19 9" stroke="#d8b4fe" stroke-width="1" stroke-linecap="round"/>
+            <circle cx="2" cy="22" r="0.5" fill="#d8b4fe" />
+            <circle cx="3.5" cy="20.5" r="1" fill="#d8b4fe" />
+        </svg>
+    </button>
+
+    <div id="sidebar-overlay"></div>
+    <div id="sidebar">
+        <div class="flex items-center justify-between p-6 border-b border-purple-500/20">
+            <h2 class="font-bold text-white text-lg tracking-widest text-shadow-sm" style="text-shadow: 0 0 10px rgba(168,85,247,0.8);">Kosmik Menyu</h2>
+            <button id="btn-close-sidebar" class="text-purple-300 hover:text-white transition-colors p-2 focus:outline-none">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <nav class="flex-grow py-6 flex flex-col gap-2 relative">
+            <a href="index.html" class="nav-link"><div class="flex items-center gap-3"><span>🌌</span> Ana Səhifə</div></a>
+            <a href="game.html" class="nav-link"><div class="flex items-center gap-3"><span>🎮</span> Sevgi Oyunu</div></a>
+            <a href="wheel.html" class="nav-link"><div class="flex items-center gap-3"><span>🎡</span> Bu Gün Nə Edək?</div></a>
+            <a href="timer.html" class="nav-link"><div class="flex items-center gap-3"><span>⏳</span> Zaman Sayğacı</div></a>
+            <button id="btn-stars-parent" class="nav-link">
+                <div class="flex items-center gap-3"><span>✨</span> Ulduz Xəritəsi</div>
+                <svg id="stars-chevron" class="w-4 h-4 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            </button>
+            <a href="songs.html" class="nav-link active-menu"><div class="flex items-center gap-3"><span>🎵</span> Mahnılarımız</div></a>
+            <a href="ai.html" class="nav-link"><div class="flex items-center gap-3"><span>🤖</span> Haley AI</div></a>
+        </nav>
+    </div>
+
+    <div id="stars-submenu">
+        <a href="stars.html?person=haley" class="submenu-item"><span class="star-bullet">✦</span> Haley Ulduz Xəritəsi</a>
+        <a href="stars.html?person=rafo" class="submenu-item"><span class="star-bullet">✦</span> Rafo Ulduz Xəritəsi</a>
+    </div>
+
+    <main>
+        <div class="page-header">
+            <div class="music-decor">✦ &nbsp;·&nbsp; ✧ &nbsp;·&nbsp; ✦</div>
+            <h1>MAHNILARIMIZ</h1>
+            <p>“Bəzi mahnılar sadəcə dinlənilmir, xatırlanır.”</p>
+        </div>
+        <div class="songs-list" id="songs-container"></div>
+    </main>
+
+    <script>
+        // Qlobal Audio Sistemin yaradılması
+        window.GlobalAudio = (function() {
+            if(window.__globalAudio) return window.__globalAudio;
+            const audio = new Audio();
+            audio.loop = true;
+            const state = JSON.parse(localStorage.getItem('cosmic_audio_state')) || { src: '', time: 0, isPlaying: false };
+            if (state.src) {
+                audio.src = state.src;
+                audio.currentTime = state.time;
+                if (state.isPlaying) {
+                    audio.play().catch(e => {
+                        const resume = () => { audio.play(); document.removeEventListener('click', resume); };
+                        document.addEventListener('click', resume, {once: true});
+                        document.addEventListener('touchstart', resume, {once: true});
+                    });
+                }
+            }
+            setInterval(() => {
+                if(!audio.paused && audio.src) {
+                    localStorage.setItem('cosmic_audio_state', JSON.stringify({src: audio.src, time: audio.currentTime, isPlaying: true}));
+                }
+            }, 1000);
+            window.addEventListener('beforeunload', () => {
+                if(audio.src) localStorage.setItem('cosmic_audio_state', JSON.stringify({src: audio.src, time: audio.currentTime, isPlaying: !audio.paused}));
+            });
+            window.addEventListener('storage', (e) => {
+                if(e.key === 'cosmic_audio_state' && e.newValue) {
+                    const newState = JSON.parse(e.newValue);
+                    if(!newState.isPlaying && !audio.paused) audio.pause();
+                    if(newState.isPlaying && audio.paused && audio.src.endsWith(newState.src)) audio.play().catch(()=>{});
+                }
+            });
+            window.__globalAudio = audio;
+            return audio;
+        })();
+    </script>
+
+    <script>
+        const canvas = document.getElementById('particle-canvas'); const ctx = canvas.getContext('2d');
+        let width, height, particles = [];
+        
+        function initParticles() {
+            width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; particles = [];
+            const numParticles = width < 768 ? 50 : 100;
+            for(let i=0; i<numParticles; i++) {
+                particles.push({ x: Math.random() * width, y: Math.random() * height, r: Math.random() * 1.0 + 0.2, alpha: Math.random() * 0.5 + 0.1, pulse: Math.random() * 0.005 + 0.002, dir: Math.random() > 0.5 ? 1 : -1, vy: Math.random() * 0.1 });
+            }
+        }
+        function animateParticles() {
+            ctx.clearRect(0, 0, width, height);
+            particles.forEach(p => {
+                p.alpha += p.pulse * p.dir; if(p.alpha >= 0.6) { p.alpha = 0.6; p.dir = -1; } else if(p.alpha <= 0.1) { p.alpha = 0.1; p.dir = 1; }
+                p.y -= p.vy; if(p.y < 0) p.y = height;
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fillStyle = `rgba(216, 180, 254, ${p.alpha})`; ctx.fill();
+            });
+            requestAnimationFrame(animateParticles);
+        }
+        window.addEventListener('resize', initParticles); initParticles(); animateParticles();
+
+        const sidebar = document.getElementById('sidebar'); const overlay = document.getElementById('sidebar-overlay');
+        const btnHalley = document.getElementById('halley-btn'); const btnCloseSidebar = document.getElementById('btn-close-sidebar');
+        const btnStarsParent = document.getElementById('btn-stars-parent'); const starsChevron = document.getElementById('stars-chevron');
+        const starsSubmenu = document.getElementById('stars-submenu');
+
+        function openSidebar() { overlay.classList.add('active'); sidebar.classList.add('open'); }
+        function closeSidebar() { overlay.classList.remove('active'); sidebar.classList.remove('open'); hideSubmenu(); }
+        btnHalley.addEventListener('click', openSidebar); btnCloseSidebar.addEventListener('click', closeSidebar);
+
+        btnStarsParent.addEventListener('click', (e) => { e.preventDefault(); const isShown = starsSubmenu.classList.contains('show'); if (isShown) hideSubmenu(); else showSubmenu(); });
+        function showSubmenu() {
+            const rect = btnStarsParent.getBoundingClientRect(); let leftPos = rect.right + 10; const topPos = rect.top;
+            if (leftPos + 240 > window.innerWidth) leftPos = window.innerWidth - 240; 
+            starsSubmenu.style.top = `${topPos}px`; starsSubmenu.style.left = `${leftPos}px`;
+            starsSubmenu.classList.add('show'); starsChevron.style.transform = 'rotate(-90deg)';
+        }
+        function hideSubmenu() { starsSubmenu.classList.remove('show'); starsChevron.style.transform = 'rotate(0deg)'; }
+
+        const SONGS = [
+            { id: 1, title: "Останься образом", text: "“Bəzən qorxuram ki, bir gün bütün bu günlər keçmişdə qalacaq. Amma sonra düşünürəm ki, sən məndə elə bir iz qoymusan ki, zaman keçsə belə, səni unutmaq mümkün olmayacaq. Sən yaddaşımda sadəcə bir xatirə kimi yox, həyatımın ən gözəl hissələrindən biri kimi qalacaqsan.”", audio: "1.mp3" },
+            { id: 2, title: "Sen Olmayan Geceler", text: "“Sənsiz gecələr mənə günün ən uzun vaxtı kimi gəlir. Telefonu əlimə alıb sənə yazmaq, səndən bir mesaj gözləmək, səsini eşitmək istəmək… Hər şey sakitləşəndə ağlımda ən çox sən qalırsan. Bu mahnı mənə göstərir ki, mənim üçün gecəni gecə edən qaranlıq deyil, sənin orada olmamağındır.”", audio: "2.mp3" },
+            { id: 3, title: "De Hardasan", text: "“Bəzən sənə “hardasan?” deyəndə əslində yerini soruşmuram. Sadəcə sənə yaxın olmaq istəyirəm. Yanımda olmadığın anda belə səni hiss etmək, səsini eşitmək, bir neçə dəqiqə də olsa səninlə danışmaq istəyirəm. Çünki darıxanda məsafənin neçə kilometr olduğunu yox, səni nə qədər çox istədiyimi hiss edirəm.”", audio: "3.mp3" },
+            { id: 4, title: "Где ты теперь и с кем", text: "“Bu mahnı mənə səndən uzaq olduğum anlarda beynimdə yaranan o qəribə sualları xatırladır. İndi nə edirsən? Nə düşünürsən? Mənim kimi məni xatırlayırsan? Amma bütün bu sualların altında əslində bircə hiss var — kaş indi yanında mən olaydım.”", audio: "4.mp3" },
+            { id: 5, title: "Как же", text: "“Bəzən özüm də sənin mənim üçün necə bu qədər vacib olduğunu anlaya bilmirəm. Necə oldu ki, bir insanın səsi əhvalımı dəyişə bildi, bir mesajı bütün günümü gözəlləşdirə bildi, bir baxışı içimdə bu qədər şey oyada bildi?”", audio: "5.mp3" },
+            { id: 6, title: "Антигерой", text: "“Sənin yanında özümü həmişə güclü göstərməyə çalışsam da, əslində sən mənim ən zəif yerimsən. Sənə qarşı laqeyd görünə bilərəm, zarafat edə bilərəm, heç nə olmamış kimi davrana bilərəm, amma içimdə sənə qarşı çox həssas bir tərəfim var. Səni itirmək fikri belə məni dəyişir.”", audio: "6.mp3" },
+            { id: 7, title: "Одна любовь", text: "“Bu mahnı mənə səninlə bağlı ən sadə, amma ən vacib həqiqəti xatırladır: mənim üçün sən “sevdiyim insanlardan biri” deyilsən. Sən tək bir insansan. Mənim bütün qarışıq hisslərimin, bütün qorxularımın və bütün gözəl anlarımın içində adı dəyişməyən bir hiss var — sənə olan sevgim.”", audio: "7.mp3" },
+            { id: 8, title: "Anlamazdın", text: "“Kaş bəzən ürəyimi çıxarıb sənə göstərə biləydim. Çünki nə qədər danışsam da, nə qədər “səni sevirəm” desəm də, içimdə olanın hamısını bu iki sözə sığdıra bilmirəm. Bəlkə də sən heç vaxt mənim səni düşündüyüm qədər düşündüyümü tam anlamazsan.”", audio: "8.mp3" },
+            { id: 9, title: "Back to Black", text: "“Bu mahnı mənə səni itirmək ehtimalının məndə yaratdığı o boşluğu hiss etdirir. Çünki insan bəzən sevdiyi adamın yoxluğunda nə qədər böyük bir yer tutduğunu anlayır. Mən səninlə aramda heç vaxt belə bir qaranlıq olsun istəmirəm.”", audio: "9.mp3" },
+            { id: 10, title: "This I Love — Guns N’ Roses", text: "“Bu mahnı mənə səni sevməyin içimdə nə qədər dərin yer tutduğunu hiss etdirir. Sənə olan sevgimi izah etməyə çalışanda həmişə sözlər çatmır. Bəzən sadəcə sənə baxmaq, yanında olmaq və heç nə demədən səni sevmək istəyirəm.”", audio: "10.mp3" },
+            { id: 11, title: "IVL — Macan", text: "“Bu mahnıda səninlə bağlı mənə ən çox toxunan şey o bağlılıq hissidir. Bəzən özümü nə qədər başqa şeylərlə məşğul etməyə çalışsam da, fikrim yenə sənə qayıdır. Sanki beynimin bir küncündə həmişə sənə ayrılmış bir yer var.”", audio: "11.mp3" },
+            { id: 12, title: "Reflections — The Neighbourhood", text: "“Bu mahnı mənə gecələr səni düşündüyüm anları xatırladır. Hər şey sakitləşəndə, ətrafda heç kim olmayanda insan öz fikirləri ilə tək qalır. Mənim fikirlərim isə çox vaxt gəlib səndə dayanır. Sən mənim həyatımda sadəcə bir insan olmadın — özümü, sevgini başqa cür görməyimə səbəb oldun.”", audio: "12.mp3" },
+            { id: 13, title: "Кинолента", text: "“Səninlə yaşadığım anları bəzən beynimdə bir kinolent kimi geri çevirirəm. İlk danışdıqlarımız, gülüşlərin, mənə baxışın, birlikdə keçirdiyimiz ən kiçik anlar belə yadımdadır. Həyatımın ən gözəl kadrlarının bir çoxunda sən varsan.”", audio: "13.mp3" }
+        ];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const container = document.getElementById('songs-container');
+            SONGS.forEach((song, index) => {
+                const numStr = String(index + 1).padStart(2, '0');
+                const card = document.createElement('div'); card.className = 'song-card';
+                card.innerHTML = `
+                    <div class="card-top-row">
+                        <div class="song-number">${numStr}</div>
+                        <button class="player-btn" aria-label="Play ${song.title}" data-audio="${song.audio}">
+                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M8 5v14l11-7z"/></svg>
+                        </button>
+                    </div>
+                    <h2>${song.title}</h2><div class="song-divider"></div><p>${song.text}</p>
+                `;
+                container.appendChild(card);
+            });
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('visible'); observer.unobserve(entry.target); } });
+            }, { threshold: 0.15, rootMargin: "0px 0px -50px 0px" });
+            document.querySelectorAll('.song-card').forEach(card => observer.observe(card));
+            
+            let currentAudio = window.GlobalAudio; 
+            let currentPlayingBtn = null;
+            const playIcon = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M8 5v14l11-7z"/></svg>`;
+            const pauseIcon = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
+
+            if (currentAudio.src && !currentAudio.paused) {
+                document.querySelectorAll('.player-btn').forEach(btn => {
+                    const audioPath = btn.getAttribute('data-audio');
+                    if (currentAudio.src.endsWith(audioPath)) { currentPlayingBtn = btn; btn.innerHTML = pauseIcon; }
+                });
+            }
+
+            document.querySelectorAll('.player-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const audioPath = btn.getAttribute('data-audio');
+                    if (currentPlayingBtn === btn) {
+                        if (currentAudio.src && currentAudio.src !== window.location.href) { 
+                            if (!currentAudio.paused) { currentAudio.pause(); btn.innerHTML = playIcon; } 
+                            else { currentAudio.play().catch(e => {}); btn.innerHTML = pauseIcon; }
+                        } else {
+                            const isPausedVisually = btn.innerHTML.includes('M8 5v14l11-7z'); btn.innerHTML = isPausedVisually ? pauseIcon : playIcon;
+                        }
+                        return;
+                    }
+                    if (currentPlayingBtn) { currentPlayingBtn.innerHTML = playIcon; currentAudio.pause(); }
+                    currentPlayingBtn = btn; btn.innerHTML = pauseIcon;
+
+                    if (audioPath && audioPath.trim() !== "") {
+                        currentAudio.src = audioPath;
+                        currentAudio.play().catch(err => { btn.innerHTML = playIcon; currentPlayingBtn = null; });
+                        currentAudio.onended = () => { btn.innerHTML = playIcon; currentPlayingBtn = null; };
+                    } else { currentAudio.removeAttribute('src'); }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

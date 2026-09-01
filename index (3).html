@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cosmic Heartbeat Animation</title>
+    <style>
+        :root {
+            --bg-color: #000000;
+            --primary-purple: #9b5de5;
+            --sidebar-bg: rgba(10, 5, 20, 0.85);
+            --transition-smooth: 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body, html {
+            width: 100%; height: 100%;
+            background-color: var(--bg-color);
+            overflow: hidden;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: white;
+        }
+
+        #canvas-container {
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%; z-index: 1;
+            background: radial-gradient(circle at center, #05020a 0%, #000000 100%);
+        }
+
+        canvas { display: block; width: 100%; height: 100%; }
+
+        #halley-btn {
+            position: fixed; top: 30px; left: 30px; z-index: 100;
+            background: transparent; border: none; cursor: pointer; outline: none;
+            display: flex; align-items: center; justify-content: center;
+            width: 48px; height: 48px; border-radius: 50%;
+            transition: transform 0.3s ease, filter 0.3s ease;
+            animation: float 4s ease-in-out infinite;
+        }
+
+        #halley-btn svg {
+            width: 32px; height: 32px; fill: none; stroke: #d4a5ff; stroke-width: 1.5;
+            stroke-linecap: round; stroke-linejoin: round;
+            filter: drop-shadow(0 0 5px rgba(212, 165, 255, 0.6));
+        }
+
+        #halley-btn:hover { transform: scale(1.1); filter: drop-shadow(0 0 15px rgba(155, 93, 229, 0.8)); }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-8px) rotate(2deg); }
+        }
+
+        #ui-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px); z-index: 90; opacity: 0; pointer-events: none;
+            transition: opacity var(--transition-smooth);
+        }
+        #ui-overlay.active { opacity: 1; }
+
+        #sidebar {
+            position: fixed; top: 0; left: 0; width: min(25vw, 420px); height: 100%;
+            background: var(--sidebar-bg); border-right: 1px solid rgba(155, 93, 229, 0.2);
+            z-index: 95; box-shadow: 20px 0 50px rgba(0,0,0,0.5);
+            transform: translateX(-100%); transition: transform var(--transition-smooth);
+            display: flex; flex-direction: column; padding: 40px 20px;
+        }
+        #sidebar.open { transform: translateX(0); }
+
+        #sidebar-close {
+            position: absolute; top: 20px; right: 20px;
+            background: transparent; border: none; color: #d4a5ff; font-size: 28px;
+            cursor: pointer; transition: color 0.3s ease, transform 0.3s ease; outline: none;
+        }
+        #sidebar-close:hover { color: #fff; transform: scale(1.1); }
+
+        .sidebar-content {
+            opacity: 0; transition: opacity 0.4s ease; transition-delay: 0.3s;
+            margin-top: 40px; flex-grow: 1;
+        }
+        #sidebar.open .sidebar-content { opacity: 1; }
+
+        .sidebar-nav { display: flex; flex-direction: column; gap: 15px; }
+        .sidebar-nav a {
+            text-decoration: none; color: rgba(212, 165, 255, 0.7); font-size: 1.2rem;
+            padding: 12px 15px; border-radius: 8px; transition: all 0.3s ease; border: 1px solid transparent;
+        }
+        .sidebar-nav a:hover { color: #fff; background: rgba(155, 93, 229, 0.15); border-color: rgba(155, 93, 229, 0.4); }
+        .sidebar-nav a.active { color: #fff; background: rgba(155, 93, 229, 0.25); border-color: #9b5de5; font-weight: bold; }
+
+        .cosmic-card {
+            position: fixed; z-index: 10; background: rgba(10, 5, 20, 0.4);
+            border: 1px solid rgba(155, 93, 229, 0.15); backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px); border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(155, 93, 229, 0.05);
+            opacity: 0; pointer-events: none;
+        }
+
+        #portrait-card { top: 40px; right: 40px; width: 140px; height: 140px; display: flex; align-items: center; justify-content: center; padding: 15px; }
+        #portrait-card svg { width: 100%; height: 100%; filter: drop-shadow(0 0 8px rgba(155, 93, 229, 0.4)); }
+        #calendar-card { bottom: 60px; right: 15vw; width: 240px; padding: 20px; }
+        #crescent-moon {
+            position: fixed; top: 9vh; left: 34vw; width: 65px; height: 65px; z-index: 5; pointer-events: none;
+            transform: rotate(22deg); filter: drop-shadow(0 0 12px rgba(216, 180, 254, 0.6)) drop-shadow(0 0 35px rgba(168, 85, 247, 0.35)) drop-shadow(0 0 70px rgba(147, 51, 234, 0.15));
+            animation: floatMoon 6s ease-in-out infinite alternate;
+        }
+
+        @keyframes floatMoon { 0% { transform: translateY(0) rotate(22deg) scale(1); } 100% { transform: translateY(-6px) rotate(22deg) scale(1.02); } }
+
+        .cal-header { text-align: center; font-size: 1.2rem; letter-spacing: 2px; text-transform: uppercase; color: #e0b0ff; margin-bottom: 15px; font-weight: 300; }
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; font-size: 0.75rem; color: rgba(255, 255, 255, 0.5); }
+        .cal-grid .day-label { color: rgba(212, 165, 255, 0.7); font-weight: 600; margin-bottom: 5px; }
+        .cal-grid .day { padding: 4px 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .cal-grid .special-day { background: rgba(155, 93, 229, 0.3); color: #fff; border: 1px solid #d4a5ff; box-shadow: 0 0 10px rgba(155, 93, 229, 0.6); font-weight: bold; }
+
+        @media (max-width: 768px) {
+            #sidebar { width: 85vw; }
+            #halley-btn { top: 15px; left: 15px; }
+            #crescent-moon { top: 8vh; left: 28vw; width: 45px; height: 45px; }
+            #portrait-card { top: 20px; right: 20px; width: 90px; height: 90px; }
+            #calendar-card { bottom: 30px; right: 20px; width: 200px; padding: 12px; }
+            .cal-header { font-size: 1rem; margin-bottom: 10px;}
+            .cal-grid { font-size: 0.65rem; gap: 4px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"><canvas id="heartCanvas"></canvas></div>
+    <div id="ui-overlay"></div>
+
+    <div id="crescent-moon">
+        <svg viewBox="0 0 100 100" style="width: 100%; height: 100%; display: block; overflow: visible;">
+            <defs>
+                <linearGradient id="moonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9" />
+                    <stop offset="25%" stop-color="#d8b4fe" stop-opacity="0.95" />
+                    <stop offset="65%" stop-color="#a855f7" stop-opacity="0.8" />
+                    <stop offset="100%" stop-color="#5b2a86" stop-opacity="0.5" />
+                </linearGradient>
+                <mask id="crescentMask">
+                    <rect width="100" height="100" fill="white" />
+                    <circle cx="50" cy="72" r="48" fill="black" />
+                </mask>
+                <filter id="innerAmbient" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="8" />
+                </filter>
+            </defs>
+            <circle cx="50" cy="45" r="45" fill="#a855f7" opacity="0.15" filter="url(#innerAmbient)" />
+            <circle cx="50" cy="50" r="48" fill="url(#moonGrad)" mask="url(#crescentMask)" />
+        </svg>
+    </div>
+
+    <div id="portrait-card" class="cosmic-card">
+        <svg viewBox="0 0 100 100" filter="drop-shadow(0 0 8px rgba(155, 93, 229, 0.4))">
+            <path d="M 15 95 C 15 75, 25 65, 30 60 C 35 55, 38 50, 38 45 C 42 45, 44 44, 45 42 C 42 41, 42 39, 44 38 C 43 37, 46 35, 46 34 L 43 31 C 43 25, 40 18, 32 15 C 20 10, 10 20, 15 35 C 18 50, 10 60, 15 95 Z" fill="#d8b4fe"/>
+            <path d="M 85 95 C 85 75, 75 65, 70 60 C 65 55, 62 50, 62 45 C 58 45, 56 44, 55 42 C 58 41, 58 39, 56 38 C 57 37, 54 35, 54 34 L 57 31 C 57 25, 60 18, 68 15 C 80 10, 90 20, 85 35 C 82 45, 85 50, 85 95 Z" fill="#5b2a86"/>
+        </svg>
+    </div>
+
+    <div id="calendar-card" class="cosmic-card">
+        <div class="cal-header">June</div>
+        <div class="cal-grid" id="cal-grid-container">
+            <div class="day-label">S</div><div class="day-label">M</div><div class="day-label">T</div>
+            <div class="day-label">W</div><div class="day-label">T</div><div class="day-label">F</div><div class="day-label">S</div>
+            <div></div>
+            <script>
+                const grid = document.getElementById('cal-grid-container');
+                for(let i=1; i<=30; i++) {
+                    const div = document.createElement('div');
+                    div.className = i === 26 ? 'day special-day' : 'day';
+                    div.innerText = i;
+                    grid.appendChild(div);
+                }
+            </script>
+        </div>
+    </div>
+
+    <button id="halley-btn" aria-label="Toggle cosmic menu">
+        <svg viewBox="0 0 24 24">
+            <circle cx="18" cy="6" r="2" fill="#fff" />
+            <path d="M17 7 L5 19 M16 5 L3 18 M19 8 L8 19" stroke-dasharray="1 3" />
+            <path d="M18 6 C 15 9, 8 16, 2 22" stroke="rgba(212, 165, 255, 0.4)" stroke-width="2" />
+        </svg>
+    </button>
+
+    <aside id="sidebar">
+        <button id="sidebar-close" aria-label="Close menu">&times;</button>
+        <div class="sidebar-content">
+            <nav class="sidebar-nav">
+                <a href="index.html" class="active">💓 Kosmik Ürək</a>
+                <a href="game.html">🎮 Sevgi Oyunu</a>
+                <a href="wheel.html">🎡 Bu Gün Nə Edək?</a>
+                <a href="timer.html">⏳ Zaman Sayğacı</a>
+                <a href="stars.html">✨ Ulduz Xəritəsi</a>
+                <a href="songs.html">🎵 Mahnılarımız</a>
+                <a href="ai.html">🤖 Haley AI</a>
+            </nav>
+        </div>
+    </aside>
+
+    <script>
+        const CONFIG = {
+            heartPointCount: 6000, heartRevealDuration: 60000,
+            heartbeatScale: 1.05, heartbeatDuration: 1500, heartbeatPulseTime: 400,
+            climaxDuration: 2000, shockwaveDuration: 1100,
+            initialParticleCount: 180, heartbeatParticleCount: 20,
+            bgGeometryCount: 35, baseScaleMultiplier: 12,
+            colors: {
+                stringBase: 'rgba(215, 135, 255, 0.06)', stringPeak: 'rgba(235, 180, 255, 0.5)',
+                bloomPeak: 'rgba(155, 93, 229, 0.25)', bloomNormal: 'rgba(155, 93, 229, 0.05)', particle: '#e0b0ff'
+            }
+        };
+
+        const STATES = { INITIALIZING: 'INITIALIZING', REVEALING: 'REVEALING', GLOW_PEAK: 'GLOW_PEAK', HEARTBEAT: 'HEARTBEAT' };
+
+        class EventEmitter {
+            constructor() { this.events = {}; }
+            on(eventName, fn) {
+                if (!this.events[eventName]) this.events[eventName] = [];
+                this.events[eventName].push(fn);
+            }
+            emit(eventName, data) {
+                if (this.events[eventName]) { this.events[eventName].forEach(fn => fn(data)); }
+            }
+        }
+        const appEvents = new EventEmitter();
+
+        const MathUtils = {
+            getHeartPoint: function(k, scale = 1) {
+                const x = 15 * Math.pow(Math.sin(k), 3);
+                const y = -(12 * Math.cos(k) - 5 * Math.cos(2 * k) - 2 * Math.cos(3 * k) - Math.cos(4 * k));
+                return { x: x * scale, y: y * scale };
+            },
+            randomRange: function(min, max) { return Math.random() * (max - min) + min; },
+            lerp: function(start, end, amt) { return (1 - amt) * start + amt * end; },
+            easeOutQuart: function(x) { return 1 - Math.pow(1 - x, 4); },
+            easeOutSine: function(x) { return Math.sin((x * Math.PI) / 2); }
+        };
+
+        class Particle {
+            constructor(x, y, isClimax, angleOffset = null) {
+                this.x = x; this.y = y;
+                let angle = angleOffset !== null ? angleOffset : Math.atan2(y, x);
+                angle += MathUtils.randomRange(-0.5, 0.5);
+                const speedMult = isClimax ? MathUtils.randomRange(2, 6) : MathUtils.randomRange(1, 3);
+                this.vx = Math.cos(angle) * speedMult;
+                this.vy = Math.sin(angle) * speedMult;
+                this.life = 1.0; this.decay = MathUtils.randomRange(0.01, 0.025);
+                this.size = MathUtils.randomRange(0.5, 2.0);
+                this.friction = 0.96; this.isWhite = Math.random() > 0.8; 
+            }
+            update() {
+                this.vx *= this.friction; this.vy *= this.friction;
+                this.x += this.vx; this.y += this.vy; this.life -= this.decay;
+            }
+            draw(ctx) {
+                if (this.life <= 0) return;
+                ctx.globalAlpha = Math.max(0, this.life);
+                ctx.fillStyle = this.isWhite ? '#ffffff' : CONFIG.colors.particle;
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        class HeartShockwave {
+            constructor() { this.active = false; this.progress = 0; this.basePoints = null; this.baseScale = 1; }
+            trigger(points, scale) { this.active = true; this.progress = 0; this.basePoints = points; this.baseScale = scale; }
+            update(dt) {
+                if (!this.active) return;
+                this.progress += dt / CONFIG.shockwaveDuration;
+                if (this.progress >= 1) this.active = false;
+            }
+            draw(ctx, centerX, centerY) {
+                if (!this.active || !this.basePoints) return;
+                const ease = MathUtils.easeOutQuart(this.progress);
+                const currentScale = this.baseScale * (1 + ease * 1.5); 
+                const alpha = (1 - ease) * 0.6; 
+                ctx.save(); ctx.translate(centerX, centerY);
+                ctx.strokeStyle = `rgba(215, 135, 255, ${alpha})`;
+                ctx.lineWidth = 1.5; ctx.globalCompositeOperation = 'screen';
+                ctx.beginPath();
+                for (let i = 0; i < this.basePoints.length; i += 5) {
+                    const px = this.basePoints[i].x * currentScale;
+                    const py = this.basePoints[i].y * currentScale;
+                    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+                }
+                ctx.stroke(); ctx.restore();
+            }
+        }
+
+        class BackgroundGeometries {
+            constructor() {
+                this.geometries = []; this.stars = []; this.timeElapsed = 0;
+                this.initElements();
+            }
+            initElements() {
+                for (let i = 0; i < 200; i++) {
+                    this.stars.push({ x: Math.random() * 2000 - 1000, y: Math.random() * 2000 - 1000, size: Math.random() * 1.2, alpha: Math.random(), speed: Math.random() * 0.015 });
+                }
+                const types = [3, 4, 6, 0, 'line', 'cross']; 
+                for (let i = 0; i < CONFIG.bgGeometryCount; i++) {
+                    const maxOp = MathUtils.randomRange(0.03, 0.12);
+                    this.geometries.push({
+                        x: (Math.random() - 0.5) * 1600, y: (Math.random() - 0.5) * 1600,
+                        vx: (Math.random() - 0.5) * 0.05, vy: (Math.random() - 0.5) * 0.05,
+                        size: MathUtils.randomRange(40, 150), rotation: Math.random() * Math.PI,
+                        rotSpeed: (Math.random() - 0.5) * 0.001, breathSpeed: MathUtils.randomRange(0.0005, 0.0015),
+                        type: types[Math.floor(Math.random() * types.length)], maxOpacity: maxOp, currentOpacity: 0
+                    });
+                }
+            }
+            update(dt, revealProgress) {
+                this.timeElapsed += dt;
+                this.stars.forEach(star => {
+                    star.alpha += star.speed;
+                    if (star.alpha > 1 || star.alpha < 0) star.speed *= -1;
+                });
+                this.geometries.forEach(geo => {
+                    geo.x += geo.vx; geo.y += geo.vy; geo.rotation += geo.rotSpeed;
+                    geo.currentOpacity = MathUtils.lerp(0, geo.maxOpacity, Math.min(1, revealProgress));
+                });
+            }
+            draw(ctx, cx, cy) {
+                ctx.save(); ctx.translate(cx, cy);
+                ctx.fillStyle = '#ffffff';
+                this.stars.forEach(star => {
+                    ctx.globalAlpha = Math.abs(star.alpha) * 0.4;
+                    ctx.beginPath(); ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2); ctx.fill();
+                });
+                ctx.strokeStyle = '#d4a5ff'; ctx.lineWidth = 0.5;
+                this.geometries.forEach(geo => {
+                    if(geo.currentOpacity <= 0.001) return;
+                    ctx.globalAlpha = geo.currentOpacity;
+                    ctx.save(); ctx.translate(geo.x, geo.y); ctx.rotate(geo.rotation);
+                    const scale = 1 + Math.sin(this.timeElapsed * geo.breathSpeed) * 0.1;
+                    ctx.scale(scale, scale);
+                    ctx.beginPath();
+                    if (geo.type === 0) { ctx.arc(0, 0, geo.size, 0, Math.PI * 2); } 
+                    else if (geo.type === 'line') { ctx.moveTo(-geo.size, 0); ctx.lineTo(geo.size, 0); } 
+                    else if (geo.type === 'cross') { ctx.moveTo(-geo.size, 0); ctx.lineTo(geo.size, 0); ctx.moveTo(0, -geo.size); ctx.lineTo(0, geo.size); } 
+                    else {
+                        for (let i = 0; i < geo.type; i++) {
+                            const angle = (i * 2 * Math.PI) / geo.type;
+                            const px = Math.cos(angle) * geo.size;
+                            const py = Math.sin(angle) * geo.size;
+                            if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+                        }
+                        ctx.closePath();
+                    }
+                    ctx.stroke(); ctx.restore();
+                });
+                ctx.restore();
+            }
+        }
+
+        class HeartRenderer {
+            constructor() {
+                this.state = STATES.INITIALIZING;
+                this.basePoints = []; this.revealProgress = 0; this.elapsedRevealTime = 0;
+                this.scaleBase = 15; this.currentScale = 15;
+                this.climaxTimer = 0; this.beatTimer = 0; this.beatAnimationTimer = 0;
+                this.bloomIntensity = 0; this.stringBrightness = 0; 
+                this.particles = []; this.shockwave = new HeartShockwave();
+                this.precomputePoints();
+            }
+            precomputePoints() {
+                for (let i = 0; i < CONFIG.heartPointCount; i++) { this.basePoints.push(MathUtils.getHeartPoint(i, 1)); }
+            }
+            resize(scale) { this.scaleBase = scale; this.currentScale = scale; }
+            update(dt) {
+                for (let i = this.particles.length - 1; i >= 0; i--) {
+                    this.particles[i].update();
+                    if (this.particles[i].life <= 0) this.particles.splice(i, 1);
+                }
+                this.shockwave.update(dt);
+                switch(this.state) {
+                    case STATES.INITIALIZING:
+                        this.state = STATES.REVEALING; this.elapsedRevealTime = 0;
+                        break;
+                    case STATES.REVEALING:
+                        this.elapsedRevealTime += dt;
+                        this.revealProgress = Math.min(this.elapsedRevealTime / CONFIG.heartRevealDuration, 1.0);
+                        appEvents.emit('onRevealProgress', this.revealProgress);
+                        this.bloomIntensity = MathUtils.lerp(0, 0.2, this.revealProgress);
+                        this.stringBrightness = 0; 
+                        if (this.revealProgress >= 1.0) { this.revealProgress = 1.0; this.triggerClimax(); }
+                        break;
+                    case STATES.GLOW_PEAK:
+                        this.climaxTimer -= dt;
+                        if (this.climaxTimer <= 0) { this.state = STATES.HEARTBEAT; this.beatTimer = CONFIG.heartbeatDuration; }
+                        const peakRatio = Math.max(0, this.climaxTimer / CONFIG.climaxDuration);
+                        const easeOut = MathUtils.easeOutSine(peakRatio);
+                        this.bloomIntensity = 0.2 + (easeOut * 0.8); this.stringBrightness = easeOut; 
+                        break;
+                    case STATES.HEARTBEAT:
+                        this.beatTimer -= dt;
+                        if (this.beatTimer <= 0) { this.triggerBeat(); this.beatTimer = CONFIG.heartbeatDuration + MathUtils.randomRange(-100, 100); }
+                        if (this.beatAnimationTimer > 0) {
+                            this.beatAnimationTimer -= dt;
+                            let progress = 1 - (this.beatAnimationTimer / CONFIG.heartbeatPulseTime);
+                            progress = Math.max(0, Math.min(1, progress));
+                            let scaleEased;
+                            if(progress < 0.3) scaleEased = progress / 0.3;
+                            else scaleEased = 1 - ((progress - 0.3) / 0.7);
+                            this.currentScale = this.scaleBase * (1 + scaleEased * (CONFIG.heartbeatScale - 1));
+                            this.bloomIntensity = 0.2 + (scaleEased * 0.5);
+                            this.stringBrightness = scaleEased * 0.8;
+                        } else {
+                            this.currentScale = this.scaleBase; this.bloomIntensity = 0.2; this.stringBrightness = 0;
+                        }
+                        break;
+                }
+            }
+            triggerClimax() {
+                this.state = STATES.GLOW_PEAK; this.climaxTimer = CONFIG.climaxDuration;
+                this.shockwave.trigger(this.basePoints, this.scaleBase);
+                this.emitParticles(CONFIG.initialParticleCount, true);
+                appEvents.emit('onHeartComplete'); appEvents.emit('onShockwave');
+            }
+            triggerBeat() {
+                this.beatAnimationTimer = CONFIG.heartbeatPulseTime;
+                this.emitParticles(CONFIG.heartbeatParticleCount, false);
+                appEvents.emit('onHeartbeat'); appEvents.emit('onParticleBurst');
+            }
+            emitParticles(count, isClimax) {
+                for(let i = 0; i < count; i++) {
+                    const randIndex = Math.floor(Math.random() * this.basePoints.length);
+                    const pt = this.basePoints[randIndex];
+                    const px = pt.x * this.currentScale; const py = pt.y * this.currentScale;
+                    this.particles.push(new Particle(px, py, isClimax));
+                }
+            }
+            draw(ctx, cx, cy) {
+                ctx.save(); ctx.translate(cx, cy);
+                const bloomRadius = this.currentScale * 30;
+                const gradient = ctx.createRadialGradient(0, -this.currentScale*2, 0, 0, -this.currentScale*2, bloomRadius);
+                const a = this.bloomIntensity;
+                gradient.addColorStop(0, `rgba(155, 93, 229, ${a * 0.35})`);
+                gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(-bloomRadius, -bloomRadius - this.currentScale*5, bloomRadius*2, bloomRadius*2.5);
+                this.particles.forEach(p => p.draw(ctx));
+                this.shockwave.draw(ctx, 0, 0);
+                ctx.globalCompositeOperation = 'screen';
+                const baseRGB = [215, 135, 255]; const targetRGB = [245, 200, 255];
+                const r = MathUtils.lerp(baseRGB[0], targetRGB[0], this.stringBrightness);
+                const g = MathUtils.lerp(baseRGB[1], targetRGB[1], this.stringBrightness);
+                const b = MathUtils.lerp(baseRGB[2], targetRGB[2], this.stringBrightness);
+                const alpha = MathUtils.lerp(0.08, 0.6, this.stringBrightness);
+                ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+                ctx.lineWidth = 0.6; 
+                const visiblePoints = Math.floor(this.revealProgress * CONFIG.heartPointCount);
+                if (visiblePoints > 0) {
+                    ctx.beginPath();
+                    for (let i = 0; i < visiblePoints; i++) {
+                        const px = this.basePoints[i].x * this.currentScale;
+                        const py = this.basePoints[i].y * this.currentScale;
+                        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+                    }
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+        }
+
+        class Engine {
+            constructor() {
+                this.canvas = document.getElementById('heartCanvas');
+                this.ctx = this.canvas.getContext('2d', { alpha: false });
+                this.lastTime = performance.now();
+                this.background = new BackgroundGeometries();
+                this.heart = new HeartRenderer();
+                this.resize();
+                window.addEventListener('resize', () => this.resize());
+                this.setupSidebar();
+                this.setupUIBindings();
+                this.loop = this.loop.bind(this);
+                requestAnimationFrame(this.loop);
+            }
+            setupSidebar() {
+                const halleyBtn = document.getElementById('halley-btn');
+                const closeBtn = document.getElementById('sidebar-close');
+                const sidebar = document.getElementById('sidebar');
+                let isSidebarOpen = false;
+                const toggleSidebar = () => {
+                    isSidebarOpen = !isSidebarOpen;
+                    if(isSidebarOpen) { sidebar.classList.add('open'); appEvents.emit('onSidebarOpen'); } 
+                    else { sidebar.classList.remove('open'); appEvents.emit('onSidebarClose'); }
+                };
+                halleyBtn.addEventListener('click', toggleSidebar);
+                closeBtn.addEventListener('click', () => { if (isSidebarOpen) toggleSidebar(); });
+            }
+            setupUIBindings() {
+                const portraitCard = document.getElementById('portrait-card');
+                const calendarCard = document.getElementById('calendar-card');
+                appEvents.on('onRevealProgress', (progress) => {
+                    let uiOp = (progress - 0.1) / 0.8;
+                    uiOp = Math.max(0, Math.min(1, uiOp));
+                    portraitCard.style.opacity = uiOp.toString();
+                    calendarCard.style.opacity = uiOp.toString();
+                });
+            }
+            resize() {
+                const dpr = window.devicePixelRatio || 1;
+                this.canvas.width = window.innerWidth * dpr;
+                this.canvas.height = window.innerHeight * dpr;
+                this.ctx.scale(dpr, dpr);
+                const minDim = Math.min(window.innerWidth, window.innerHeight);
+                const newScale = (minDim / 800) * CONFIG.baseScaleMultiplier;
+                const finalScale = Math.max(6, Math.min(newScale, 18));
+                this.heart.resize(finalScale);
+            }
+            loop(currentTime) {
+                let dt = currentTime - this.lastTime;
+                if (dt > 100) dt = 16; 
+                this.lastTime = currentTime;
+                this.ctx.fillStyle = '#000000';
+                this.ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
+                const cx = window.innerWidth / 2;
+                const cy = window.innerHeight / 2 - (this.heart.currentScale * 2);
+                this.background.update(dt, this.heart.revealProgress);
+                this.heart.update(dt);
+                this.background.draw(this.ctx, cx, cy);
+                this.heart.draw(this.ctx, cx, cy);
+                requestAnimationFrame(this.loop);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log("%c Cosmic Heartbeat Initialized", "color: #9b5de5; font-weight: bold; border: 1px solid #9b5de5; padding: 5px;");
+            new Engine();
+        });
+    </script>
+    
+    <script>
+        window.GlobalAudio = (function() {
+            if(window.__globalAudio) return window.__globalAudio;
+            const audio = new Audio();
+            audio.loop = true;
+            const state = JSON.parse(localStorage.getItem('cosmic_audio_state')) || { src: '', time: 0, isPlaying: false };
+            if (state.src) {
+                audio.src = state.src;
+                audio.currentTime = state.time;
+                if (state.isPlaying) {
+                    audio.play().catch(e => {
+                        const resume = () => { audio.play(); document.removeEventListener('click', resume); };
+                        document.addEventListener('click', resume, {once: true});
+                        document.addEventListener('touchstart', resume, {once: true});
+                    });
+                }
+            }
+            setInterval(() => {
+                if(!audio.paused && audio.src) {
+                    localStorage.setItem('cosmic_audio_state', JSON.stringify({src: audio.src, time: audio.currentTime, isPlaying: true}));
+                }
+            }, 1000);
+            window.addEventListener('beforeunload', () => {
+                if(audio.src) localStorage.setItem('cosmic_audio_state', JSON.stringify({src: audio.src, time: audio.currentTime, isPlaying: !audio.paused}));
+            });
+            window.addEventListener('storage', (e) => {
+                if(e.key === 'cosmic_audio_state' && e.newValue) {
+                    const newState = JSON.parse(e.newValue);
+                    if(!newState.isPlaying && !audio.paused) audio.pause();
+                    if(newState.isPlaying && audio.paused && audio.src.endsWith(newState.src)) audio.play().catch(()=>{});
+                }
+            });
+            window.__globalAudio = audio;
+            return audio;
+        })();
+    </script>
+</body>
+</html>
